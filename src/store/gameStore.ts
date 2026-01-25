@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Equipment } from '@/components/game';
+import { getMuted, setMuted as setSoundMuted } from '@/lib/utils';
 
 export type GameState = 'idle' | 'loading' | 'playing' | 'finished';
 
@@ -18,6 +19,8 @@ interface GameStore {
   optimalTime: number;
   optimalSequence: string[];
   hintsUsed: number;
+  timerStartTime: number | null;
+  isMuted: boolean;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -28,6 +31,9 @@ interface GameStore {
   removePlacedEquipment: (equipmentId: string) => void;
   setTotalTime: (time: number) => void;
   addHintUsage: () => void;
+  startTimer: () => void;
+  stopTimer: () => void;
+  toggleMute: () => void;
   resetGame: () => void;
 }
 
@@ -40,6 +46,8 @@ const initialState = {
   optimalTime: 0,
   optimalSequence: [],
   hintsUsed: 0,
+  timerStartTime: null,
+  isMuted: typeof window !== 'undefined' ? getMuted() : false,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -71,5 +79,19 @@ export const useGameStore = create<GameStore>((set) => ({
   addHintUsage: () =>
     set((state) => ({ hintsUsed: state.hintsUsed + 1 })),
 
-  resetGame: () => set(initialState),
+  startTimer: () => set({ timerStartTime: Date.now() }),
+
+  stopTimer: () => set({ timerStartTime: null }),
+
+  toggleMute: () =>
+    set((state) => {
+      const newMuted = !state.isMuted;
+      setSoundMuted(newMuted);
+      return { isMuted: newMuted };
+    }),
+
+  resetGame: () => set({
+    ...initialState,
+    isMuted: typeof window !== 'undefined' ? getMuted() : false,
+  }),
 }));

@@ -10,12 +10,21 @@ import {
   ScoreDisplay,
   HintPanel,
   HintDisplay,
+  Timer,
   type Equipment,
   type HintData,
 } from '@/components/game';
 import { Button, Loading } from '@/components/ui';
 import { useGameStore } from '@/store/gameStore';
-import { calculateTotalSetupTime, calculateScore, getRank } from '@/lib/utils';
+import {
+  calculateTotalSetupTime,
+  calculateScore,
+  getRank,
+  playDropSound,
+  playCompleteSound,
+  playScoreSound,
+  resumeAudioContext,
+} from '@/lib/utils';
 
 export default function GamePage() {
   const router = useRouter();
@@ -26,6 +35,8 @@ export default function GamePage() {
     totalTime,
     optimalTime,
     hintsUsed,
+    timerStartTime,
+    isMuted,
     setGameState,
     setSessionId,
     setEquipments,
@@ -34,6 +45,9 @@ export default function GamePage() {
     removePlacedEquipment,
     setTotalTime,
     addHintUsage,
+    startTimer,
+    stopTimer,
+    toggleMute,
     resetGame,
   } = useGameStore();
 
@@ -79,6 +93,10 @@ export default function GamePage() {
       setEquipments(data.equipments);
       setOptimalData(data.optimalTime, data.optimalSequence);
       setGameState('playing');
+      startTimer();
+
+      // Resume audio context on user interaction
+      resumeAudioContext();
     } catch (error) {
       console.error('Error initializing game:', error);
       alert('ゲームの初期化に失敗しました');
@@ -135,6 +153,14 @@ export default function GamePage() {
 
     const position = parseInt(match[1], 10) - 1;
     addPlacedEquipment(equipment, position);
+
+    // Play drop sound
+    playDropSound();
+
+    // Check if all equipment placed and play complete sound
+    if (placedSequence.length + 1 === equipments.length) {
+      setTimeout(() => playCompleteSound(), 200);
+    }
   };
 
   const handleRemoveEquipment = (equipmentId: string) => {
@@ -183,7 +209,11 @@ export default function GamePage() {
         ranking: data.ranking,
       });
       setGameState('finished');
+      stopTimer();
       setShowScore(true);
+
+      // Play score display sound
+      setTimeout(() => playScoreSound(), 300);
     } catch (error) {
       console.error('Error submitting score:', error);
       alert('スコアの送信に失敗しました');
@@ -271,17 +301,38 @@ export default function GamePage() {
       {/* Header */}
       <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <h1 className="text-2xl font-bold text-gray-900">
               段取りシミュレーションゲーム
             </h1>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleReset}>
-                リセット
-              </Button>
-              <Button variant="secondary" onClick={() => router.push('/')}>
-                ホームに戻る
-              </Button>
+
+            <div className="flex items-center gap-4">
+              {/* Timer */}
+              <Timer
+                startTime={timerStartTime}
+                isRunning={gameState === 'playing'}
+              />
+
+              {/* Mute Button */}
+              <button
+                onClick={toggleMute}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title={isMuted ? '音声をオンにする' : '音声をオフにする'}
+              >
+                <span className="text-2xl">
+                  {isMuted ? '🔇' : '🔊'}
+                </span>
+              </button>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleReset}>
+                  リセット
+                </Button>
+                <Button variant="secondary" onClick={() => router.push('/')}>
+                  ホームに戻る
+                </Button>
+              </div>
             </div>
           </div>
         </div>

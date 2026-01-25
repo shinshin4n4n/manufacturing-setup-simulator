@@ -21,3 +21,6 @@ export type { HintPanelProps } from './HintPanel';
 
 export { HintDisplay } from './HintDisplay';
 export type { HintDisplayProps, HintData } from './HintDisplay';
+
+export { Timer } from './Timer';
+export type { TimerProps } from './Timer';
