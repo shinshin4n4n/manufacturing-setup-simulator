@@ -8,7 +8,10 @@ import {
   PlacementArea,
   EquipmentDragOverlay,
   ScoreDisplay,
+  HintPanel,
+  HintDisplay,
   type Equipment,
+  type HintData,
 } from '@/components/game';
 import { Button, Loading } from '@/components/ui';
 import { useGameStore } from '@/store/gameStore';
@@ -22,6 +25,7 @@ export default function GamePage() {
     placedSequence,
     totalTime,
     optimalTime,
+    hintsUsed,
     setGameState,
     setSessionId,
     setEquipments,
@@ -29,6 +33,7 @@ export default function GamePage() {
     addPlacedEquipment,
     removePlacedEquipment,
     setTotalTime,
+    addHintUsage,
     resetGame,
   } = useGameStore();
 
@@ -40,6 +45,7 @@ export default function GamePage() {
     ranking: number;
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [hintData, setHintData] = useState<HintData | null>(null);
 
   // Initialize game on mount
   useEffect(() => {
@@ -162,6 +168,7 @@ export default function GamePage() {
           sequence,
           totalTime,
           difficulty: 1,
+          hintsUsed,
         }),
       });
 
@@ -194,9 +201,62 @@ export default function GamePage() {
     router.push('/ranking');
   };
 
+  const handleHintRequest = async (level: 1 | 2 | 3) => {
+    try {
+      // Get available equipment (not yet placed)
+      const placedIds = placedSequence.map((pe) => pe.equipment.id);
+      const availableEquipment = equipments.filter(
+        (eq) => !placedIds.includes(eq.id)
+      );
+
+      // Get last placed equipment code
+      const lastPlaced =
+        placedSequence.length > 0
+          ? placedSequence.sort((a, b) => b.position - a.position)[0].equipment
+              .code
+          : null;
+
+      const response = await fetch('/api/game/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          level,
+          lastPlacedCode: lastPlaced,
+          availableCodes: availableEquipment.map((eq) => eq.code),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch hint');
+      }
+
+      const data = await response.json();
+      setHintData(data);
+      addHintUsage();
+    } catch (error) {
+      console.error('Error fetching hint:', error);
+      alert('ヒントの取得に失敗しました');
+    }
+  };
+
+  const handleCloseHint = () => {
+    setHintData(null);
+  };
+
   const isComplete = placedSequence.length === equipments.length;
   const isEquipmentPlaced = (equipmentId: string) =>
     placedSequence.some((pe) => pe.equipment.id === equipmentId);
+
+  const getAvailableEquipment = () => {
+    const placedIds = placedSequence.map((pe) => pe.equipment.id);
+    return equipments.filter((eq) => !placedIds.includes(eq.id));
+  };
+
+  const getLastPlacedCode = () => {
+    if (placedSequence.length === 0) return null;
+    const sorted = [...placedSequence].sort((a, b) => b.position - a.position);
+    return sorted[0].equipment.code;
+  };
 
   if (gameState === 'loading') {
     return (
@@ -254,6 +314,17 @@ export default function GamePage() {
                   ))}
                 </div>
               </div>
+
+              {/* Hint Panel */}
+              <div className="mt-6">
+                <HintPanel
+                  availableEquipment={getAvailableEquipment()}
+                  lastPlacedCode={getLastPlacedCode()}
+                  hintsUsed={hintsUsed}
+                  maxHints={3}
+                  onHintRequest={handleHintRequest}
+                />
+              </div>
             </div>
 
             {/* Right Side: Placement Area */}
@@ -262,6 +333,13 @@ export default function GamePage() {
                 placedEquipment={placedSequence}
                 onRemoveEquipment={handleRemoveEquipment}
               />
+
+              {/* Hint Display */}
+              {hintData && (
+                <div className="mt-6">
+                  <HintDisplay hintData={hintData} onClose={handleCloseHint} />
+                </div>
+              )}
             </div>
           </div>
 
