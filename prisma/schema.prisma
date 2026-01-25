@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 設備マスタ
+model Equipment {
+  id          String   @id @default(uuid())
+  name        String   // 設備名
+  code        String   @unique // 設備コード
+  description String?  // 説明
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // リレーション
+  setupMatrixFrom SetupMatrix[] @relation("FromEquipment")
+  setupMatrixTo   SetupMatrix[] @relation("ToEquipment")
+
+  @@index([code])
+}
+
+// 段取り時間マトリックス
+model SetupMatrix {
+  id              String   @id @default(uuid())
+  fromEquipmentId String   // 前の製品ID
+  toEquipmentId   String   // 次の製品ID
+  setupTime       Int      // 標準段取り時間（秒）
+  difficulty      Int      @default(1) // 難易度（1-5）
+  description     String?  // 段取り作業の説明
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // リレーション
+  fromEquipment Equipment @relation("FromEquipment", fields: [fromEquipmentId], references: [id], onDelete: Cascade)
+  toEquipment   Equipment @relation("ToEquipment", fields: [toEquipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([fromEquipmentId, toEquipmentId])
+  @@index([fromEquipmentId])
+  @@index([toEquipmentId])
+}
+
+// ゲームセッション
+model GameSession {
+  id           String   @id @default(uuid())
+  playerName   String   // プレイヤー名
+  score        Int      // スコア
+  totalTime    Int      // 合計時間（秒）
+  setupCount   Int      @default(0) // 段取り回数
+  averageTime  Float?   // 平均段取り時間
+  difficulty   Int      @default(1) // 難易度
+  completedAt  DateTime @default(now()) // 完了日時
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([score])
+  @@index([completedAt])
+  @@index([playerName])
+}
