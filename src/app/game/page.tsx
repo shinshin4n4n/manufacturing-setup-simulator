@@ -1,0 +1,312 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { useRouter } from 'next/navigation';
+import {
+  DraggableEquipmentCard,
+  PlacementArea,
+  EquipmentDragOverlay,
+  ScoreDisplay,
+  type Equipment,
+} from '@/components/game';
+import { Button, Loading } from '@/components/ui';
+import { useGameStore } from '@/store/gameStore';
+import { calculateTotalSetupTime, calculateScore, getRank } from '@/lib/utils';
+
+export default function GamePage() {
+  const router = useRouter();
+  const {
+    gameState,
+    equipments,
+    placedSequence,
+    totalTime,
+    optimalTime,
+    setGameState,
+    setSessionId,
+    setEquipments,
+    setOptimalData,
+    addPlacedEquipment,
+    removePlacedEquipment,
+    setTotalTime,
+    resetGame,
+  } = useGameStore();
+
+  const [activeEquipment, setActiveEquipment] = useState<Equipment | null>(null);
+  const [showScore, setShowScore] = useState(false);
+  const [scoreData, setScoreData] = useState<{
+    score: number;
+    rank: 'S' | 'A' | 'B' | 'C' | 'D';
+    ranking: number;
+  } | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  // Initialize game on mount
+  useEffect(() => {
+    initializeGame();
+  }, []);
+
+  // Calculate total time when placement changes
+  useEffect(() => {
+    if (placedSequence.length > 0) {
+      calculateCurrentTime();
+    } else {
+      setTotalTime(0);
+    }
+  }, [placedSequence]);
+
+  const initializeGame = async () => {
+    setGameState('loading');
+    try {
+      const response = await fetch('/api/game/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ difficulty: 1 }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start game');
+      }
+
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      setEquipments(data.equipments);
+      setOptimalData(data.optimalTime, data.optimalSequence);
+      setGameState('playing');
+    } catch (error) {
+      console.error('Error initializing game:', error);
+      alert('ゲームの初期化に失敗しました');
+      router.push('/');
+    }
+  };
+
+  const calculateCurrentTime = async () => {
+    if (placedSequence.length < 2) {
+      setTotalTime(0);
+      return;
+    }
+
+    setIsCalculating(true);
+    try {
+      const sequence = placedSequence
+        .sort((a, b) => a.position - b.position)
+        .map((pe) => pe.equipment.code);
+
+      const time = await calculateTotalSetupTime(sequence);
+      setTotalTime(time);
+    } catch (error) {
+      console.error('Error calculating time:', error);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleDragStart = (event: DragEndEvent) => {
+    const equipment = event.active.data.current?.equipment as Equipment;
+    setActiveEquipment(equipment);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveEquipment(null);
+
+    if (!over) return;
+
+    const equipment = active.data.current?.equipment as Equipment;
+    if (!equipment) return;
+
+    // Check if already placed
+    const isAlreadyPlaced = placedSequence.some(
+      (pe) => pe.equipment.id === equipment.id
+    );
+
+    if (isAlreadyPlaced) return;
+
+    // Extract position from drop zone ID (e.g., "placement-slot-1" -> 0)
+    const slotId = over.id as string;
+    const match = slotId.match(/placement-slot-(\d+)/);
+    if (!match) return;
+
+    const position = parseInt(match[1], 10) - 1;
+    addPlacedEquipment(equipment, position);
+  };
+
+  const handleRemoveEquipment = (equipmentId: string) => {
+    removePlacedEquipment(equipmentId);
+  };
+
+  const handleReset = () => {
+    if (confirm('ゲームをリセットしてもよろしいですか？')) {
+      resetGame();
+      initializeGame();
+    }
+  };
+
+  const handleComplete = async () => {
+    if (placedSequence.length !== equipments.length) {
+      alert('すべての設備を配置してください');
+      return;
+    }
+
+    setGameState('loading');
+    try {
+      const sequence = placedSequence
+        .sort((a, b) => a.position - b.position)
+        .map((pe) => pe.equipment.code);
+
+      const response = await fetch('/api/game/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName: 'Player', // TODO: Get from user input
+          sequence,
+          totalTime,
+          difficulty: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit score');
+      }
+
+      const data = await response.json();
+      setScoreData({
+        score: data.score,
+        rank: data.rank,
+        ranking: data.ranking,
+      });
+      setGameState('finished');
+      setShowScore(true);
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      alert('スコアの送信に失敗しました');
+      setGameState('playing');
+    }
+  };
+
+  const handlePlayAgain = () => {
+    setShowScore(false);
+    resetGame();
+    initializeGame();
+  };
+
+  const handleViewRanking = () => {
+    router.push('/ranking');
+  };
+
+  const isComplete = placedSequence.length === equipments.length;
+  const isEquipmentPlaced = (equipmentId: string) =>
+    placedSequence.some((pe) => pe.equipment.id === equipmentId);
+
+  if (gameState === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading text="読み込み中..." size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">
+              段取りシミュレーションゲーム
+            </h1>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={handleReset}>
+                リセット
+              </Button>
+              <Button variant="secondary" onClick={() => router.push('/')}>
+                ホームに戻る
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <DndContext
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Side: Equipment Cards */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  設備一覧
+                </h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  設備をドラッグして配置エリアにドロップしてください
+                </p>
+                <div className="space-y-4">
+                  {equipments.map((equipment) => (
+                    <DraggableEquipmentCard
+                      key={equipment.id}
+                      equipment={equipment}
+                      isPlaced={isEquipmentPlaced(equipment.id)}
+                      disabled={isEquipmentPlaced(equipment.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side: Placement Area */}
+            <div className="lg:col-span-2">
+              <PlacementArea
+                placedEquipment={placedSequence}
+                onRemoveEquipment={handleRemoveEquipment}
+              />
+            </div>
+          </div>
+
+          {/* Drag Overlay */}
+          <EquipmentDragOverlay activeEquipment={activeEquipment} />
+        </DndContext>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white shadow-md mt-8">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">
+                段取り時間:
+              </span>
+              <span className="text-2xl font-bold text-blue-600">
+                {isCalculating ? '計算中...' : `${totalTime}分`}
+              </span>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleComplete}
+              disabled={!isComplete || gameState !== 'playing'}
+            >
+              完了
+            </Button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Score Display Modal */}
+      {scoreData && (
+        <ScoreDisplay
+          isOpen={showScore}
+          userTime={totalTime}
+          optimalTime={optimalTime}
+          score={scoreData.score}
+          rank={scoreData.rank}
+          onClose={() => setShowScore(false)}
+          onPlayAgain={handlePlayAgain}
+          onViewRanking={handleViewRanking}
+        />
+      )}
+    </div>
+  );
+}
