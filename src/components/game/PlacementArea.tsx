@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 import { EquipmentCard, Equipment } from './EquipmentCard';
 
@@ -24,8 +25,8 @@ const PlacementSlot: React.FC<PlacementSlotProps> = ({
 
   const isEmpty = !equipment;
 
-  // Base styles
-  const baseStyles = 'w-64 h-48 rounded-lg transition-all duration-200 flex items-center justify-center relative';
+  // Base styles - Responsive sizing
+  const baseStyles = 'w-full sm:w-56 md:w-64 h-44 sm:h-48 rounded-lg flex items-center justify-center relative';
 
   // State-based styles
   const emptyStyles = isEmpty
@@ -41,32 +42,55 @@ const PlacementSlot: React.FC<PlacementSlotProps> = ({
     .join(' ');
 
   return (
-    <div ref={setNodeRef} className={slotClasses}>
+    <motion.div
+      ref={setNodeRef}
+      className={slotClasses}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: position * 0.05 }}
+      whileHover={isEmpty ? { scale: 1.02 } : undefined}
+    >
       {isEmpty ? (
-        <div className="text-center px-4">
-          <div className="text-4xl font-bold text-gray-400 mb-2">{position}</div>
-          <p className="text-sm text-gray-500">
+        <motion.div
+          className="text-center px-4"
+          animate={isOver ? { scale: 1.1 } : { scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        >
+          <div className="text-3xl sm:text-4xl font-bold text-gray-400 mb-2">{position}</div>
+          <p className="text-xs sm:text-sm text-gray-500">
             {isOver ? '設備を配置' : 'ドロップしてください'}
           </p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="relative">
+        <motion.div
+          className="relative"
+          initial={{ scale: 0, rotate: -10 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        >
           <EquipmentCard equipment={equipment} isPlaced={true} />
           {onRemove && (
-            <button
+            <motion.button
               onClick={() => onRemove(equipment.id)}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-md"
+              className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
               aria-label="Remove equipment"
+              whileHover={{ scale: 1.1, backgroundColor: '#dc2626' }}
+              whileTap={{ scale: 0.9 }}
             >
               ×
-            </button>
+            </motion.button>
           )}
-          <div className="absolute -top-3 -left-3 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-md">
+          <motion.div
+            className="absolute -top-3 -left-3 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-md"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
             {position}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -99,13 +123,17 @@ export const PlacementArea: React.FC<PlacementAreaProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {/* Title */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">配置エリア</h2>
-        <p className="text-gray-600">設備を順番に配置してください（5つすべて配置する必要があります）</p>
-      </div>
+      <motion.div
+        className="mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">配置エリア</h2>
+        <p className="text-sm sm:text-base text-gray-600">設備を順番に配置してください（5つすべて配置する必要があります）</p>
+      </motion.div>
 
       {/* Slots Container - Responsive */}
-      <div className="flex flex-col lg:flex-row items-center gap-4 overflow-x-auto pb-4">
+      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 overflow-x-auto pb-4">
         {slots.map((slot, index) => (
           <React.Fragment key={`slot-${slot.position}`}>
             <PlacementSlot

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Layout } from '@/components/Layout';
 import { Button, Card } from '@/components/ui';
@@ -12,16 +13,31 @@ export default function HomePage() {
     <Layout>
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100">
         {/* Hero Section */}
-        <section className="py-20 px-4">
+        <section className="py-12 sm:py-16 md:py-20 px-4">
           <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 animate-fadeIn">
+            <motion.h1
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6"
+              initial={{ opacity: 0, y: -30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
               製造業向け<br />
               段取りシミュレーションゲーム
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto">
+            </motion.h1>
+            <motion.p
+              className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto px-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
               段取り替えを最適化して、生産効率を高めよう！
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            </motion.p>
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center px-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
               <Button
                 variant="primary"
                 size="lg"
@@ -38,16 +54,22 @@ export default function HomePage() {
               >
                 🏆 ランキングを見る
               </Button>
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* Game Rules Section */}
-        <section className="py-16 px-4 bg-white">
+        <section className="py-12 sm:py-16 px-4 bg-white">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">
+            <motion.h2
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8 sm:mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
               ゲームルール
-            </h2>
+            </motion.h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card
                 title="🎯 目的"

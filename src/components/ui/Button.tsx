@@ -1,9 +1,10 @@
 import React from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'variant'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   ...props
 }) => {
-  const baseStyles = 'font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseStyles = 'font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2';
   const disabledStyles = 'opacity-50 cursor-not-allowed';
 
   const buttonClasses = [
@@ -43,12 +44,19 @@ export const Button: React.FC<ButtonProps> = ({
     .join(' ');
 
   return (
-    <button
+    <motion.button
       className={buttonClasses}
       disabled={disabled}
+      whileHover={!disabled ? { scale: 1.05 } : undefined}
+      whileTap={!disabled ? { scale: 0.95 } : undefined}
+      transition={{
+        type: 'spring',
+        stiffness: 400,
+        damping: 17,
+      }}
       {...props}
     >
       {children}
-    </button>
+    </motion.button>
   );
 };

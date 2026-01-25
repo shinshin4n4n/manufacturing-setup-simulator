@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 export interface Equipment {
   id: string;
@@ -15,34 +16,28 @@ export interface EquipmentCardProps {
   className?: string;
 }
 
-export const EquipmentCard: React.FC<EquipmentCardProps> = ({
+export const EquipmentCard: React.FC<EquipmentCardProps> = React.memo(({
   equipment,
   isDragging = false,
   isPlaced = false,
   onClick,
   className = '',
 }) => {
-  // Base styles
-  const baseStyles = 'w-64 h-40 rounded-lg transition-all duration-200 cursor-pointer select-none';
+  // Base styles - Responsive sizing
+  const baseStyles = 'w-full sm:w-56 md:w-64 h-32 sm:h-36 md:h-40 rounded-lg cursor-pointer select-none relative';
 
   // Background and border styles based on state
   const stateStyles = isPlaced
     ? 'bg-white border-2 border-green-500 shadow-md'
     : 'bg-white border-2 border-blue-500 shadow-md';
 
-  // Hover effect (not applied when dragging)
-  const hoverStyles = !isDragging
-    ? 'hover:shadow-xl hover:-translate-y-1 hover:border-blue-600'
-    : '';
-
   // Dragging state
-  const draggingStyles = isDragging ? 'opacity-50 scale-95' : '';
+  const draggingStyles = isDragging ? 'opacity-50' : '';
 
   // Combine all classes
   const cardClasses = [
     baseStyles,
     stateStyles,
-    hoverStyles,
     draggingStyles,
     className,
   ]
@@ -50,7 +45,7 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
     .join(' ');
 
   return (
-    <div
+    <motion.div
       className={cardClasses}
       onClick={onClick}
       role="button"
@@ -61,13 +56,25 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
           onClick();
         }
       }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={!isDragging && !isPlaced ? {
+        scale: 1.03,
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      } : undefined}
+      whileTap={!isDragging && !isPlaced ? { scale: 0.98 } : undefined}
+      transition={{
+        type: 'spring',
+        stiffness: 300,
+        damping: 20,
+      }}
     >
       {/* Card Content Container */}
-      <div className="flex h-full p-4">
+      <div className="flex h-full p-3 sm:p-4">
         {/* Left side - Equipment Code (Large) */}
-        <div className="flex items-center justify-center w-20 h-full">
+        <div className="flex items-center justify-center w-14 sm:w-16 md:w-20 h-full">
           <div
-            className={`text-5xl font-bold ${
+            className={`text-3xl sm:text-4xl md:text-5xl font-bold ${
               isPlaced ? 'text-green-600' : 'text-blue-600'
             }`}
           >
@@ -76,14 +83,14 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="w-px bg-gray-300 mx-4" />
+        <div className="w-px bg-gray-300 mx-2 sm:mx-3 md:mx-4" />
 
         {/* Right side - Equipment Details */}
-        <div className="flex flex-col justify-center flex-1">
-          <h3 className="text-lg font-bold text-gray-900 mb-1">
+        <div className="flex flex-col justify-center flex-1 min-w-0">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 truncate">
             {equipment.name}
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
             {equipment.description || '設備の説明がありません'}
           </p>
         </div>
@@ -91,12 +98,17 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
 
       {/* Status Indicator Badge */}
       {isPlaced && (
-        <div className="absolute top-2 right-2">
+        <motion.div
+          className="absolute top-2 right-2"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+        >
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
             配置済み
           </span>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
-};
+});

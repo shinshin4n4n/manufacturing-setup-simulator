@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 export interface LoadingProps {
   text?: string;
@@ -24,17 +25,27 @@ export const Loading: React.FC<LoadingProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
+    <motion.div
+      className={`flex flex-col items-center justify-center gap-4 ${className}`}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+    >
       <div
         className={`${sizeStyles[size]} border-gray-200 border-t-blue-600 rounded-full animate-spin`}
         role="status"
         aria-label="Loading"
       />
       {text && (
-        <p className={`${textSizeStyles[size]} text-gray-600 font-medium`}>
+        <motion.p
+          className={`${textSizeStyles[size]} text-gray-600 font-medium`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           {text}
-        </p>
+        </motion.p>
       )}
-    </div>
+    </motion.div>
   );
 };
