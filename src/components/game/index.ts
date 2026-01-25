@@ -12,3 +12,6 @@ export type { DroppableAreaProps } from './DroppableArea';
 
 export { PlacementArea } from './PlacementArea';
 export type { PlacementAreaProps } from './PlacementArea';
+
+export { ScoreDisplay } from './ScoreDisplay';
+export type { ScoreDisplayProps } from './ScoreDisplay';
