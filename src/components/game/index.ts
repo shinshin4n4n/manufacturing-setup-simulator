@@ -9,3 +9,6 @@ export type { EquipmentDragOverlayProps } from './EquipmentDragOverlay';
 
 export { DroppableArea } from './DroppableArea';
 export type { DroppableAreaProps } from './DroppableArea';
+
+export { PlacementArea } from './PlacementArea';
+export type { PlacementAreaProps } from './PlacementArea';
