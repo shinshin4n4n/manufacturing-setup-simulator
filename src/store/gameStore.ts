@@ -17,6 +17,7 @@ interface GameStore {
   totalTime: number;
   optimalTime: number;
   optimalSequence: string[];
+  hintsUsed: number;
 
   // Actions
   setGameState: (state: GameState) => void;
@@ -26,6 +27,7 @@ interface GameStore {
   addPlacedEquipment: (equipment: Equipment, position: number) => void;
   removePlacedEquipment: (equipmentId: string) => void;
   setTotalTime: (time: number) => void;
+  addHintUsage: () => void;
   resetGame: () => void;
 }
 
@@ -37,6 +39,7 @@ const initialState = {
   totalTime: 0,
   optimalTime: 0,
   optimalSequence: [],
+  hintsUsed: 0,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -64,6 +67,9 @@ export const useGameStore = create<GameStore>((set) => ({
     })),
 
   setTotalTime: (time) => set({ totalTime: time }),
+
+  addHintUsage: () =>
+    set((state) => ({ hintsUsed: state.hintsUsed + 1 })),
 
   resetGame: () => set(initialState),
 }));

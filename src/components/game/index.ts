@@ -15,3 +15,9 @@ export type { PlacementAreaProps } from './PlacementArea';
 
 export { ScoreDisplay } from './ScoreDisplay';
 export type { ScoreDisplayProps } from './ScoreDisplay';
+
+export { HintPanel } from './HintPanel';
+export type { HintPanelProps } from './HintPanel';
+
+export { HintDisplay } from './HintDisplay';
+export type { HintDisplayProps, HintData } from './HintDisplay';

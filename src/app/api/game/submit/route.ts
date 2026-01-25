@@ -18,6 +18,7 @@ interface GameSubmitRequest {
   sequence: string[];
   totalTime: number;
   difficulty: number;
+  hintsUsed?: number;
 }
 
 /**
@@ -144,8 +145,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate score and rank
-    const score = calculateScore(body.totalTime, optimalResult.time);
+    // Calculate base score
+    let score = calculateScore(body.totalTime, optimalResult.time);
+
+    // Apply hint penalty (-5% per hint)
+    const hintsUsed = body.hintsUsed || 0;
+    if (hintsUsed > 0) {
+      const penaltyMultiplier = 1 - 0.05 * hintsUsed;
+      score = score * penaltyMultiplier;
+    }
+
     const rank = getRank(score);
 
     // Calculate average setup time
