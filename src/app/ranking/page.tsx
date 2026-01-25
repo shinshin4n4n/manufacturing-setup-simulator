@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button, Loading } from '@/components/ui';
 
@@ -211,12 +212,14 @@ export default function RankingPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {rankings.map((entry) => (
-                    <tr
+                  {rankings.map((entry, index) => (
+                    <motion.tr
                       key={`${entry.rank}-${entry.playerName}-${entry.completedAt}`}
-                      className={`${getRankRowStyle(
-                        entry.rank
-                      )} transition-colors duration-200`}
+                      className={getRankRowStyle(entry.rank)}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.3 }}
+                      whileHover={{ scale: 1.01 }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getRankBadge(entry.rank)}
@@ -241,7 +244,7 @@ export default function RankingPage() {
                           {formatDate(entry.completedAt)}
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>

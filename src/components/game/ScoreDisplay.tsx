@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, useSpring, useTransform } from 'framer-motion';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import type { Rank } from '@/lib/utils';

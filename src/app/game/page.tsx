@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { useRouter } from 'next/navigation';
 import {
@@ -339,22 +340,27 @@ export default function GamePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <main className="max-w-7xl xl:max-w-[1280px] mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
         <DndContext
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Left Side: Equipment Cards */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
+            <div className="lg:col-span-1 order-1 lg:order-1">
+              <motion.div
+                className="bg-white rounded-lg shadow-md p-4 sm:p-6"
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
                   設備一覧
                 </h2>
-                <p className="text-sm text-gray-600 mb-6">
+                <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                   設備をドラッグして配置エリアにドロップしてください
                 </p>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {equipments.map((equipment) => (
                     <DraggableEquipmentCard
                       key={equipment.id}
@@ -364,10 +370,15 @@ export default function GamePage() {
                     />
                   ))}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Hint Panel */}
-              <div className="mt-6">
+              <motion.div
+                className="mt-4 sm:mt-6"
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
                 <HintPanel
                   availableEquipment={getAvailableEquipment()}
                   lastPlacedCode={getLastPlacedCode()}
@@ -375,21 +386,33 @@ export default function GamePage() {
                   maxHints={3}
                   onHintRequest={handleHintRequest}
                 />
-              </div>
+              </motion.div>
             </div>
 
             {/* Right Side: Placement Area */}
-            <div className="lg:col-span-2">
-              <PlacementArea
-                placedEquipment={placedSequence}
-                onRemoveEquipment={handleRemoveEquipment}
-              />
+            <div className="lg:col-span-2 order-2 lg:order-2">
+              <motion.div
+                className="bg-white rounded-lg shadow-md p-4 sm:p-6"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <PlacementArea
+                  placedEquipment={placedSequence}
+                  onRemoveEquipment={handleRemoveEquipment}
+                />
+              </motion.div>
 
               {/* Hint Display */}
               {hintData && (
-                <div className="mt-6">
+                <motion.div
+                  className="mt-4 sm:mt-6"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                >
                   <HintDisplay hintData={hintData} onClose={handleCloseHint} />
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
