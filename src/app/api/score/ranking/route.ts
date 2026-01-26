@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db/prisma';
 
 /**
  * Ranking entry type
@@ -181,8 +179,6 @@ export async function GET(request: NextRequest) {
         message: 'An unexpected error occurred',
       },
       { status: 500 }
-      );
-  } finally {
-    await prisma.$disconnect();
+    );
   }
 }

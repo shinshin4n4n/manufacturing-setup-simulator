@@ -8,6 +8,12 @@ export {
 export type { OptimalSequenceResult, Rank } from './setupTimeCalculator';
 
 export {
+  getCachedOptimal,
+  setCachedOptimal,
+  clearCachedOptimal,
+} from './optimalCache';
+
+export {
   playDropSound,
   playCompleteSound,
   playScoreSound,

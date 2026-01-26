@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/prisma';
 import { findOptimalSequence } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
 
 /**
  * Request body type for POST /api/game/start
@@ -142,7 +140,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

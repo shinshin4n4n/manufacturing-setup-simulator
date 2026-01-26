@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db/prisma';
 
 interface HintRequestBody {
   level: 1 | 2 | 3;
-  lastPlacedCode: string | null;
-  availableCodes: string[];
+  lastPlacedCode?: string | null;
+  availableCodes?: string[];
+  difficulty?: number;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: HintRequestBody = await request.json();
-    const { level, lastPlacedCode, availableCodes } = body;
+    const { level, lastPlacedCode, availableCodes, difficulty = 1 } = body;
 
     // Validate input
     if (!level || ![1, 2, 3].includes(level)) {
@@ -22,6 +21,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Level 3: Return setup matrix (no need for available equipment)
+    if (level === 3) {
+      try {
+        const setupMatrix = await prisma.setupMatrix.findMany({
+          where: {
+            difficulty,
+          },
+          include: {
+            fromEquipment: true,
+            toEquipment: true,
+          },
+        });
+
+        if (!setupMatrix || setupMatrix.length === 0) {
+          return NextResponse.json(
+            { error: 'Setup matrix data not found' },
+            { status: 404 }
+          );
+        }
+
+        const matrixData = setupMatrix.map((sm) => ({
+          from: sm.fromEquipment.code,
+          to: sm.toEquipment.code,
+          time: sm.setupTime,
+        }));
+
+        return NextResponse.json({
+          level: 3,
+          matrix: matrixData,
+        });
+      } catch (error) {
+        console.error('Error fetching setup matrix:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch setup matrix data' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Level 1 & 2: Calculate best next equipment
+    // Validate available equipment for these levels
     if (!availableCodes || availableCodes.length === 0) {
       return NextResponse.json(
         { error: 'No available equipment' },
@@ -29,28 +69,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Level 3: Return setup matrix
-    if (level === 3) {
-      const setupMatrix = await prisma.setupMatrix.findMany({
-        include: {
-          fromEquipment: true,
-          toEquipment: true,
-        },
-      });
-
-      const matrixData = setupMatrix.map((sm) => ({
-        from: sm.fromEquipment.code,
-        to: sm.toEquipment.code,
-        time: sm.setupTime,
-      }));
-
-      return NextResponse.json({
-        level: 3,
-        matrix: matrixData,
-      });
-    }
-
-    // Level 1 & 2: Calculate best next equipment
     if (!lastPlacedCode) {
       // No equipment placed yet - just return available equipment
       const equipment = await prisma.equipment.findMany({
@@ -105,12 +123,11 @@ export async function POST(request: NextRequest) {
 
       if (!equipment) continue;
 
-      const setupMatrix = await prisma.setupMatrix.findUnique({
+      const setupMatrix = await prisma.setupMatrix.findFirst({
         where: {
-          fromEquipmentId_toEquipmentId: {
-            fromEquipmentId: lastEquipment.id,
-            toEquipmentId: equipment.id,
-          },
+          fromEquipmentId: lastEquipment.id,
+          toEquipmentId: equipment.id,
+          difficulty,
         },
       });
 

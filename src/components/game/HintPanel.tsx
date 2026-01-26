@@ -126,26 +126,32 @@ export const HintPanel: React.FC<HintPanelProps> = ({
       </p>
 
       <div className="space-y-3">
-        {hintLevels.map((hint) => (
-          <button
-            key={hint.level}
-            onClick={() => handleHintClick(hint.level)}
-            disabled={!canUseHint || availableEquipment.length === 0}
-            className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-              canUseHint && availableEquipment.length > 0
-                ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
-                : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{hint.icon}</span>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900">{hint.title}</h3>
-                <p className="text-sm text-gray-600">{hint.description}</p>
+        {hintLevels.map((hint) => {
+          // Level 3 (matrix) doesn't require available equipment
+          const isDisabled = !canUseHint || (hint.level !== 3 && availableEquipment.length === 0);
+          const isEnabled = canUseHint && (hint.level === 3 || availableEquipment.length > 0);
+
+          return (
+            <button
+              key={hint.level}
+              onClick={() => handleHintClick(hint.level)}
+              disabled={isDisabled}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                isEnabled
+                  ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                  : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{hint.icon}</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900">{hint.title}</h3>
+                  <p className="text-sm text-gray-600">{hint.description}</p>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {/* Confirmation Modal */}
