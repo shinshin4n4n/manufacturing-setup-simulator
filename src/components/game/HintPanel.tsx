@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
 import type { Equipment } from './EquipmentCard';
+import { showToast } from '@/lib/utils/toast';
 
 export interface HintPanelProps {
   /**
@@ -84,7 +85,7 @@ export const HintPanel: React.FC<HintPanelProps> = ({
 
   const handleHintClick = (level: 1 | 2 | 3) => {
     if (!canUseHint) {
-      alert('ヒントの使用回数が上限に達しました');
+      showToast.warning('ヒントの使用回数が上限に達しました');
       return;
     }
 
