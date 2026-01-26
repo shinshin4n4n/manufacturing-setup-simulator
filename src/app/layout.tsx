@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Toaster } from "react-hot-toast";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +16,21 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="antialiased">
-        {children}
+        <ErrorBoundary>
+          {children}
+          <Toaster
+            position="top-right"
+            reverseOrder={false}
+            gutter={8}
+            toastOptions={{
+              duration: 4000,
+              style: {
+                borderRadius: '8px',
+                fontSize: '14px',
+              },
+            }}
+          />
+        </ErrorBoundary>
       </body>
     </html>
   );

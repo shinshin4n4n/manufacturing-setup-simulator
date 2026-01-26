@@ -23,6 +23,7 @@ import {
   playScoreSound,
   resumeAudioContext,
 } from '@/lib/utils';
+import { showToast, showErrorWithRetry } from '@/lib/utils/toast';
 
 export default function GamePage() {
   const router = useRouter();
@@ -73,8 +74,11 @@ export default function GamePage() {
     }
   }, [placedSequence]);
 
-  const initializeGame = async () => {
+  const initializeGame = async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
     setGameState('loading');
+    const loadingToast = showToast.loading('ゲームを初期化中...');
+
     try {
       const response = await fetch('/api/game/start', {
         method: 'POST',
@@ -95,10 +99,26 @@ export default function GamePage() {
 
       // Resume audio context on user interaction
       resumeAudioContext();
+
+      showToast.dismiss(loadingToast);
+      showToast.success('ゲームを開始しました！');
     } catch (error) {
       console.error('Error initializing game:', error);
-      alert('ゲームの初期化に失敗しました');
-      router.push('/');
+      showToast.dismiss(loadingToast);
+
+      // Retry logic with exponential backoff
+      if (retryCount < MAX_RETRIES) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        showToast.warning(`再試行中... (${retryCount + 1}/${MAX_RETRIES})`);
+        setTimeout(() => initializeGame(retryCount + 1), delay);
+      } else {
+        // Show error with retry button after max retries
+        showErrorWithRetry(
+          'ゲームの初期化に失敗しました。ネットワーク接続を確認してください。',
+          () => initializeGame(0)
+        );
+        router.push('/');
+      }
     }
   };
 
@@ -184,11 +204,13 @@ export default function GamePage() {
 
   const handleComplete = async () => {
     if (placedSequence.length !== equipments.length) {
-      alert('すべての設備を配置してください');
+      showToast.warning('すべての設備を配置してください');
       return;
     }
 
     setGameState('loading');
+    const loadingToast = showToast.loading('スコアを送信中...');
+
     try {
       const sequence = placedSequence
         .sort((a, b) => a.position - b.position)
@@ -220,11 +242,18 @@ export default function GamePage() {
       stopTimer();
       setShowScore(true);
 
+      showToast.dismiss(loadingToast);
+      showToast.success('スコアを送信しました！');
+
       // Play score display sound
       setTimeout(() => playScoreSound(), 300);
     } catch (error) {
       console.error('Error submitting score:', error);
-      alert('スコアの送信に失敗しました');
+      showToast.dismiss(loadingToast);
+      showErrorWithRetry(
+        'スコアの送信に失敗しました',
+        handleComplete
+      );
       setGameState('playing');
     }
   };
@@ -286,7 +315,7 @@ export default function GamePage() {
       console.error('Error fetching hint:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'ヒントの取得に失敗しました';
-      alert(errorMessage);
+      showToast.error(errorMessage);
     }
   };
 

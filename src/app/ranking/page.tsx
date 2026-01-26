@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button, Loading } from '@/components/ui';
+import { showToast } from '@/lib/utils/toast';
 
 interface RankingEntry {
   rank: number;
@@ -46,7 +47,7 @@ export default function RankingPage() {
       setTotal(data.total);
     } catch (error) {
       console.error('Error fetching rankings:', error);
-      alert('ランキングの取得に失敗しました');
+      showToast.error('ランキングの取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
