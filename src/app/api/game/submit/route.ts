@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/prisma';
+import { v4 as uuidv4 } from 'uuid';
 import {
   calculateTotalSetupTime,
   findOptimalSequence,
@@ -7,8 +8,6 @@ import {
   getRank,
   type Rank,
 } from '@/lib/utils';
-
-const prisma = new PrismaClient();
 
 /**
  * Request body type for POST /api/game/submit
@@ -53,7 +52,9 @@ export async function POST(request: NextRequest) {
     let body: GameSubmitRequest;
     try {
       body = await request.json();
+      console.log('Received submit request:', JSON.stringify(body, null, 2));
     } catch (error) {
+      console.error('JSON parse error:', error);
       return NextResponse.json<ErrorResponse>(
         {
           error: 'Invalid JSON',
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Validate request body
     if (typeof body.playerName !== 'string' || body.playerName.trim() === '') {
+      console.error('Invalid playerName:', body.playerName);
       return NextResponse.json<ErrorResponse>(
         {
           error: 'Invalid playerName',
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
     let calculatedTime: number;
     try {
       calculatedTime = await calculateTotalSetupTime(body.sequence);
+      console.log(`Calculated time: ${calculatedTime}, Provided time: ${body.totalTime}`);
     } catch (error) {
       console.error('Error calculating setup time:', error);
       return NextResponse.json<ErrorResponse>(
@@ -119,16 +122,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify that provided totalTime matches calculated time
-    if (Math.abs(calculatedTime - body.totalTime) > 0.01) {
-      return NextResponse.json<ErrorResponse>(
-        {
-          error: 'Time mismatch',
-          message: `Provided time (${body.totalTime}) does not match calculated time (${calculatedTime})`,
-        },
-        { status: 400 }
-      );
-    }
+    // Use the calculated time instead of the provided time
+    // This ensures accuracy and prevents client-side manipulation
+    const actualTotalTime = calculatedTime;
 
     // Get optimal sequence and time
     let optimalResult;
@@ -145,8 +141,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate base score
-    let score = calculateScore(body.totalTime, optimalResult.time);
+    // Calculate base score using the calculated time
+    let score = calculateScore(actualTotalTime, optimalResult.time);
 
     // Apply hint penalty (-5% per hint)
     const hintsUsed = body.hintsUsed || 0;
@@ -159,19 +155,21 @@ export async function POST(request: NextRequest) {
 
     // Calculate average setup time
     const setupCount = body.sequence.length - 1; // Number of transitions
-    const averageTime = setupCount > 0 ? body.totalTime / setupCount : 0;
+    const averageTime = setupCount > 0 ? actualTotalTime / setupCount : 0;
 
     // Save to database
     let gameSession;
     try {
       gameSession = await prisma.gameSession.create({
         data: {
+          id: uuidv4(),
           playerName: body.playerName.trim(),
           score: Math.round(score),
-          totalTime: body.totalTime,
+          totalTime: actualTotalTime,
           setupCount,
           averageTime,
           difficulty: body.difficulty,
+          updatedAt: new Date(),
         },
       });
     } catch (error) {
@@ -220,7 +218,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

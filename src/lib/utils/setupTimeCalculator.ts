@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db/prisma';
+import { getCachedOptimal, setCachedOptimal } from './optimalCache';
 
 /**
  * Optimal sequence result type
@@ -11,9 +10,72 @@ export interface OptimalSequenceResult {
 }
 
 /**
+ * Setup matrix cache for in-memory calculations
+ */
+interface SetupMatrixCache {
+  [fromCode: string]: {
+    [toCode: string]: number;
+  };
+}
+
+/**
  * Rank type
  */
 export type Rank = 'S' | 'A' | 'B' | 'C' | 'D';
+
+/**
+ * Load all setup matrix data into memory for fast calculations
+ */
+async function loadSetupMatrixCache(): Promise<SetupMatrixCache> {
+  const setupMatrixData = await prisma.setupMatrix.findMany({
+    include: {
+      fromEquipment: true,
+      toEquipment: true,
+    },
+  });
+
+  const cache: SetupMatrixCache = {};
+
+  for (const entry of setupMatrixData) {
+    const fromCode = entry.fromEquipment.code;
+    const toCode = entry.toEquipment.code;
+
+    if (!cache[fromCode]) {
+      cache[fromCode] = {};
+    }
+
+    cache[fromCode][toCode] = entry.setupTime;
+  }
+
+  return cache;
+}
+
+/**
+ * Calculate total setup time using in-memory cache (fast)
+ */
+function calculateTotalSetupTimeFromCache(
+  sequence: string[],
+  cache: SetupMatrixCache
+): number {
+  if (!sequence || sequence.length <= 1) {
+    return 0;
+  }
+
+  let totalTime = 0;
+
+  for (let i = 0; i < sequence.length - 1; i++) {
+    const fromCode = sequence[i];
+    const toCode = sequence[i + 1];
+
+    if (!cache[fromCode] || cache[fromCode][toCode] === undefined) {
+      throw new Error(`Setup time not found for transition: ${fromCode} -> ${toCode}`);
+    }
+
+    totalTime += cache[fromCode][toCode];
+  }
+
+  return totalTime;
+}
 
 /**
  * Calculate total setup time for a given equipment sequence
@@ -103,6 +165,7 @@ function permute<T>(arr: T[]): T[][] {
 /**
  * Find the optimal equipment sequence with minimum setup time
  * Uses brute force approach for 5 equipment (5! = 120 permutations)
+ * Results are cached to avoid recalculation
  *
  * @returns Object containing optimal sequence and its total time
  * @throws Error if no equipment found or calculation fails
@@ -112,6 +175,16 @@ function permute<T>(arr: T[]): T[][] {
  * console.log(result); // { sequence: ["A", "C", "B", "E", "D"], time: 65 }
  */
 export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
+  // Check cache first
+  const cached = getCachedOptimal();
+  if (cached) {
+    console.log('Returning cached optimal sequence:', cached);
+    return cached;
+  }
+
+  console.log('Calculating optimal sequence (this may take a few seconds)...');
+  const startTime = Date.now();
+
   // Get all equipment
   const allEquipment = await prisma.equipment.findMany({
     orderBy: { code: 'asc' },
@@ -123,6 +196,9 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
 
   const equipmentCodes = allEquipment.map((eq) => eq.code);
 
+  // Load setup matrix into memory for fast calculations
+  const setupMatrixCache = await loadSetupMatrixCache();
+
   // Generate all permutations
   const allPermutations = permute(equipmentCodes);
 
@@ -132,7 +208,7 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
   // Try each permutation and find the one with minimum time
   for (const sequence of allPermutations) {
     try {
-      const time = await calculateTotalSetupTime(sequence);
+      const time = calculateTotalSetupTimeFromCache(sequence, setupMatrixCache);
 
       if (time < minTime) {
         minTime = time;
@@ -148,10 +224,18 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
     throw new Error('Failed to find optimal sequence');
   }
 
-  return {
+  const result: OptimalSequenceResult = {
     sequence: optimalSequence,
     time: minTime,
   };
+
+  // Cache the result
+  setCachedOptimal(result);
+
+  const elapsed = Date.now() - startTime;
+  console.log(`Optimal sequence calculated in ${elapsed}ms:`, result);
+
+  return result;
 }
 
 /**

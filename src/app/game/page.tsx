@@ -18,9 +18,6 @@ import {
 import { Button, Loading } from '@/components/ui';
 import { useGameStore } from '@/store/gameStore';
 import {
-  calculateTotalSetupTime,
-  calculateScore,
-  getRank,
   playDropSound,
   playCompleteSound,
   playScoreSound,
@@ -117,8 +114,18 @@ export default function GamePage() {
         .sort((a, b) => a.position - b.position)
         .map((pe) => pe.equipment.code);
 
-      const time = await calculateTotalSetupTime(sequence);
-      setTotalTime(time);
+      const response = await fetch('/api/game/calculate-time', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sequence }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate time');
+      }
+
+      const data = await response.json();
+      setTotalTime(data.totalTime);
     } catch (error) {
       console.error('Error calculating time:', error);
     } finally {
@@ -234,31 +241,42 @@ export default function GamePage() {
 
   const handleHintRequest = async (level: 1 | 2 | 3) => {
     try {
-      // Get available equipment (not yet placed)
-      const placedIds = placedSequence.map((pe) => pe.equipment.id);
-      const availableEquipment = equipments.filter(
-        (eq) => !placedIds.includes(eq.id)
-      );
+      // Prepare request body based on hint level
+      const requestBody: {
+        level: 1 | 2 | 3;
+        difficulty: number;
+        lastPlacedCode?: string | null;
+        availableCodes?: string[];
+      } = { level, difficulty: 1 };
 
-      // Get last placed equipment code
-      const lastPlaced =
-        placedSequence.length > 0
-          ? placedSequence.sort((a, b) => b.position - a.position)[0].equipment
-              .code
-          : null;
+      // Level 3 doesn't require available equipment or last placed code
+      if (level !== 3) {
+        // Get available equipment (not yet placed)
+        const placedIds = placedSequence.map((pe) => pe.equipment.id);
+        const availableEquipment = equipments.filter(
+          (eq) => !placedIds.includes(eq.id)
+        );
+
+        // Get last placed equipment code
+        const lastPlaced =
+          placedSequence.length > 0
+            ? placedSequence.sort((a, b) => b.position - a.position)[0]
+                .equipment.code
+            : null;
+
+        requestBody.lastPlacedCode = lastPlaced;
+        requestBody.availableCodes = availableEquipment.map((eq) => eq.code);
+      }
 
       const response = await fetch('/api/game/hint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          level,
-          lastPlacedCode: lastPlaced,
-          availableCodes: availableEquipment.map((eq) => eq.code),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch hint');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch hint');
       }
 
       const data = await response.json();
@@ -266,7 +284,9 @@ export default function GamePage() {
       addHintUsage();
     } catch (error) {
       console.error('Error fetching hint:', error);
-      alert('ヒントの取得に失敗しました');
+      const errorMessage =
+        error instanceof Error ? error.message : 'ヒントの取得に失敗しました';
+      alert(errorMessage);
     }
   };
 
