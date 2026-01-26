@@ -16,7 +16,7 @@ export interface EquipmentCardProps {
   className?: string;
 }
 
-export const EquipmentCard: React.FC<EquipmentCardProps> = React.memo(({
+const EquipmentCardComponent: React.FC<EquipmentCardProps> = ({
   equipment,
   isDragging = false,
   isPlaced = false,
@@ -111,4 +111,8 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = React.memo(({
       )}
     </motion.div>
   );
-});
+};
+
+EquipmentCardComponent.displayName = 'EquipmentCard';
+
+export const EquipmentCard = React.memo(EquipmentCardComponent);
