@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { getCachedOptimal, setCachedOptimal } from './optimalCache';
+import { findOptimalSequenceDP } from './setupTimeOptimizer';
 
 /**
  * Optimal sequence result type
@@ -164,7 +165,11 @@ function permute<T>(arr: T[]): T[][] {
 
 /**
  * Find the optimal equipment sequence with minimum setup time
- * Uses brute force approach for 5 equipment (5! = 120 permutations)
+ *
+ * Algorithm selection based on equipment count:
+ * - 5 or fewer: Brute force (O(n!)) - Fast enough for small n
+ * - 6 or more: Dynamic Programming/Held-Karp (O(n² × 2ⁿ)) - Much faster for larger n
+ *
  * Results are cached to avoid recalculation
  *
  * @returns Object containing optimal sequence and its total time
@@ -182,7 +187,7 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
     return cached;
   }
 
-  console.log('Calculating optimal sequence (this may take a few seconds)...');
+  console.log('Calculating optimal sequence...');
   const startTime = Date.now();
 
   // Get all equipment
@@ -195,39 +200,49 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
   }
 
   const equipmentCodes = allEquipment.map((eq) => eq.code);
+  const n = equipmentCodes.length;
 
   // Load setup matrix into memory for fast calculations
   const setupMatrixCache = await loadSetupMatrixCache();
 
-  // Generate all permutations
-  const allPermutations = permute(equipmentCodes);
+  let result: OptimalSequenceResult;
 
-  let optimalSequence: string[] = [];
-  let minTime = Infinity;
+  // Choose algorithm based on equipment count
+  if (n <= 5) {
+    // Brute force approach (O(n!)) - acceptable for n ≤ 5
+    console.log(`Using brute force algorithm for ${n} equipment (${factorial(n)} permutations)`);
 
-  // Try each permutation and find the one with minimum time
-  for (const sequence of allPermutations) {
-    try {
-      const time = calculateTotalSetupTimeFromCache(sequence, setupMatrixCache);
+    const allPermutations = permute(equipmentCodes);
+    let optimalSequence: string[] = [];
+    let minTime = Infinity;
 
-      if (time < minTime) {
-        minTime = time;
-        optimalSequence = sequence;
+    for (const sequence of allPermutations) {
+      try {
+        const time = calculateTotalSetupTimeFromCache(sequence, setupMatrixCache);
+
+        if (time < minTime) {
+          minTime = time;
+          optimalSequence = sequence;
+        }
+      } catch (error) {
+        console.error(`Error calculating time for sequence ${sequence}:`, error);
       }
-    } catch (error) {
-      // Skip invalid sequences
-      console.error(`Error calculating time for sequence ${sequence}:`, error);
     }
-  }
 
-  if (optimalSequence.length === 0) {
-    throw new Error('Failed to find optimal sequence');
-  }
+    if (optimalSequence.length === 0) {
+      throw new Error('Failed to find optimal sequence');
+    }
 
-  const result: OptimalSequenceResult = {
-    sequence: optimalSequence,
-    time: minTime,
-  };
+    result = {
+      sequence: optimalSequence,
+      time: minTime,
+    };
+  } else {
+    // Dynamic Programming approach (O(n² × 2ⁿ)) - much faster for n > 5
+    console.log(`Using DP algorithm for ${n} equipment (complexity: ${n}² × 2^${n} = ${n * n * Math.pow(2, n)})`);
+
+    result = findOptimalSequenceDP(equipmentCodes, setupMatrixCache);
+  }
 
   // Cache the result
   setCachedOptimal(result);
@@ -236,6 +251,14 @@ export async function findOptimalSequence(): Promise<OptimalSequenceResult> {
   console.log(`Optimal sequence calculated in ${elapsed}ms:`, result);
 
   return result;
+}
+
+/**
+ * Calculate factorial (for logging purposes)
+ */
+function factorial(n: number): number {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
 }
 
 /**
