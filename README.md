@@ -161,6 +161,23 @@ npm run lint
 npx prisma studio
 ```
 
+## 📚 ドキュメント
+
+詳細なドキュメントは /docs ディレクトリを参照してください。
+
+### 設計ドキュメント
+- [データベース設計](./docs/design/DATABASE.md) - ER図、テーブル定義
+- [画面設計](./docs/design/SCREENS.md) - 画面遷移図、ワイヤーフレーム
+- [システム構成](./docs/design/ARCHITECTURE.md) - 技術スタック、アーキテクチャ
+- [API仕様](./docs/design/API.md) - エンドポイント一覧
+
+### 開発ドキュメント
+- [環境構築](./docs/development/SETUP.md) - セットアップ手順
+- [テスト](./docs/development/TESTING.md) - テスト戦略
+
+### デプロイドキュメント
+- [Vercelデプロイ](./docs/deployment/VERCEL.md) - デプロイ手順
+
 ## ライセンス
 
 MIT
