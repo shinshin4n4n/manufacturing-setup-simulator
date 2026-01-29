@@ -62,12 +62,15 @@ export const Timer: React.FC<TimerProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg ${className}`}
+      className={`flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 rounded-xl shadow-md border-2 border-blue-200 ${className}`}
     >
-      <span className="text-sm font-medium text-gray-700">経過時間:</span>
-      <span className="text-2xl font-bold text-blue-600 font-mono">
-        {formatTime(elapsedTime)}
-      </span>
+      <span className="text-xl">⏱️</span>
+      <div className="flex flex-col">
+        <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">経過時間</span>
+        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-mono">
+          {formatTime(elapsedTime)}
+        </span>
+      </div>
     </div>
   );
 };
