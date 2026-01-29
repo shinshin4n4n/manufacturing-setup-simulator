@@ -347,14 +347,18 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-white shadow-md">
+      <header className="bg-gradient-to-r from-white via-blue-50 to-indigo-50 shadow-lg border-b-4 border-indigo-500">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              段取りシミュレーションゲーム
-            </h1>
+            <motion.h1
+              className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              🏭 段取りシミュレーションゲーム
+            </motion.h1>
 
             <div className="flex items-center gap-4">
               {/* Timer */}
@@ -364,15 +368,17 @@ export default function GamePage() {
               />
 
               {/* Mute Button */}
-              <button
+              <motion.button
                 onClick={toggleMute}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg bg-white shadow-md hover:shadow-lg hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 transition-all"
                 title={isMuted ? '音声をオンにする' : '音声をオフにする'}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <span className="text-2xl">
                   {isMuted ? '🔇' : '🔊'}
                 </span>
-              </button>
+              </motion.button>
 
               {/* Action Buttons */}
               <div className="flex gap-2">
@@ -398,15 +404,18 @@ export default function GamePage() {
             {/* Left Side: Equipment Cards */}
             <div className="lg:col-span-1 order-1 lg:order-1">
               <motion.div
-                className="bg-white rounded-lg shadow-md p-4 sm:p-6"
+                className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 rounded-xl shadow-xl border border-blue-100 p-4 sm:p-6"
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-                  設備一覧
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <span className="text-2xl">📦</span>
+                  <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    設備一覧
+                  </h2>
+                </div>
+                <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 pl-8">
                   設備をドラッグして配置エリアにドロップしてください
                 </p>
                 <div className="space-y-3 sm:space-y-4">
@@ -441,7 +450,7 @@ export default function GamePage() {
             {/* Right Side: Placement Area */}
             <div className="lg:col-span-2 order-2 lg:order-2">
               <motion.div
-                className="bg-white rounded-lg shadow-md p-4 sm:p-6"
+                className="bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 rounded-xl shadow-xl border border-indigo-100 p-4 sm:p-6"
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
@@ -472,25 +481,44 @@ export default function GamePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white shadow-md mt-8">
+      <footer className="bg-gradient-to-r from-white via-indigo-50 to-purple-50 shadow-lg border-t-4 border-indigo-500 mt-8">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">
-                段取り時間:
-              </span>
-              <span className="text-2xl font-bold text-blue-600">
-                {isCalculating ? '計算中...' : `${totalTime}分`}
-              </span>
-            </div>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={handleComplete}
-              disabled={!isComplete || gameState !== 'playing'}
+            <motion.div
+              className="flex items-center gap-4 bg-white rounded-xl shadow-md px-6 py-4 border-2 border-indigo-200"
+              animate={isCalculating ? { scale: [1, 1.02, 1] } : {}}
+              transition={{ repeat: isCalculating ? Infinity : 0, duration: 1 }}
             >
-              完了
-            </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⏱️</span>
+                <span className="text-sm font-medium text-gray-700">
+                  段取り時間:
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-mono">
+                  {isCalculating ? '計算中...' : `${totalTime}分`}
+                </span>
+                {optimalTime > 0 && !isCalculating && (
+                  <span className="text-sm text-gray-500">
+                    (最適: {optimalTime}分)
+                  </span>
+                )}
+              </div>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleComplete}
+                disabled={!isComplete || gameState !== 'playing'}
+              >
+                🎯 完了
+              </Button>
+            </motion.div>
           </div>
         </div>
       </footer>
