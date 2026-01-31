@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calculateTotalSetupTime } from '@/lib/utils';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
 interface CalculateTimeRequest {
   sequence: string[];
 }

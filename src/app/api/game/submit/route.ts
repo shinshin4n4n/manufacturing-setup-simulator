@@ -9,9 +9,6 @@ import {
   type Rank,
 } from '@/lib/utils';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
 /**
  * Request body type for POST /api/game/submit
  */
