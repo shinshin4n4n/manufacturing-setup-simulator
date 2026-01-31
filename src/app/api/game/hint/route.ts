@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 interface HintRequestBody {
   level: 1 | 2 | 3;
   lastPlacedCode?: string | null;

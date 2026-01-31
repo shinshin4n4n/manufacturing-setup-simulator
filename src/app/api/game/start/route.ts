@@ -3,6 +3,9 @@ import { prisma } from '@/lib/db/prisma';
 import { findOptimalSequence } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 /**
  * Request body type for POST /api/game/start
  */
